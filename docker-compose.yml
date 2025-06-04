@@ -1,13 +1,11 @@
 services:
-  wind-notifier:
+  wind-watcher:
     build: .
     container_name: wind_notifier
     restart: unless-stopped
     environment:
-      OPENWEATHER_API_KEY: "${OPENWEATHER_API_KEY}"
-      DISCORD_WEBHOOK_URL: "${DISCORD_WEBHOOK_URL}"
-      WIND_THRESHOLD_KMH: "10"
-      NOTIFY_HOUR: "9"
-      STATE_FILE: "/data/last_notification.txt"
-    volumes:
-      - ./data:/data
+      OPENWEATHER_API_KEY: "8b4448d08b3e763c190e033373060231"
+      DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/1323312161350484120/LiaSGEPX3Mi14EDO_1bEn13ekJGhSexK7Mf3fjAZwa_iZwlzo8mpphPX7YreM6xXSXrh"
+      WIND_THRESHOLD: "10"
+      NOTIFY_HOUR: "18"
+

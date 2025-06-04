@@ -1,11 +1,18 @@
-FROM python:3.11-slim
+FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
+COPY go.mod ./
+RUN go mod download
+
 COPY . .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN go build -o main ./cmd/wind-watcher/main.go
 
-RUN chmod +x entrypoint.sh
+FROM alpine
 
-ENTRYPOINT ["./entrypoint.sh"]
+WORKDIR /app
+
+COPY --from=builder /app/main .
+
+CMD ["./main"]

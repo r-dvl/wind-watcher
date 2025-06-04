@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wind-watcher.fullname" . }}
+  labels:
+    {{- include "wind-watcher.labels" . | nindent 4 }}
+data:
+  WIND_THRESHOLD: "{{ .Values.windThreshold | default "11" }}"
+  NOTIFY_HOUR: "{{ .Values.notifyHour | default "9" }}"
+  OPENWEATHER_API_KEY: "{{ .Values.openweatherApiKey | default "" }}"
+  DISCORD_WEBHOOK_URL: "{{ .Values.discordWebhookUrl | default "" }}"
+  STATE_FILE: "{{ .Values.stateFile | default "/tmp/last_notification_date" }}"
+  WIND_KMH_FACTOR: "{{ .Values.windKMHFactor | default "3.6" }}"
