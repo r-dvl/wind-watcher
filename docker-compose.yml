@@ -1,0 +1,13 @@
+services:
+  wind-notifier:
+    build: .
+    container_name: wind_notifier
+    restart: unless-stopped
+    environment:
+      OPENWEATHER_API_KEY: "${OPENWEATHER_API_KEY}"
+      DISCORD_WEBHOOK_URL: "${DISCORD_WEBHOOK_URL}"
+      WIND_THRESHOLD_KMH: "10"
+      NOTIFY_HOUR: "9"
+      STATE_FILE: "/data/last_notification.txt"
+    volumes:
+      - ./data:/data
