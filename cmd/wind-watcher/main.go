@@ -18,13 +18,17 @@ func main() {
         now := time.Now()
 
         if now.Hour() >= config.GetNotifyHour() && !state.HasNotifiedToday() {
-            weatherData, windSpeed, err := wind.GetWeatherDataAndWindSpeed()
+            threshold := float64(config.GetWindThreshold())
+            dayWind, err := wind.GetForecastWindBelowThreshold(threshold)
             if err != nil {
-                log.Println("❌ Error getting wind data:", err)
+                log.Println("❌ No notification sent:", err)
             } else {
                 location := config.GetLocation()
-                msg := fmt.Sprintf("🌬️ Wind in %s: %.1f km/h.", location, windSpeed)
-                err = notify.SendDiscordWeatherNotification(msg, weatherData)
+                msg := fmt.Sprintf(
+                    "🌬️ Good news! The wind in %s will be %.1f km/h or less on %s. Perfect for your plans!",
+                    location, dayWind.Speed, dayWind.Date,
+                )
+                err = notify.SendDiscordWeatherNotification(msg, dayWind.Data)
                 if err != nil {
                     log.Println("❌ Error sending notification:", err)
                 } else {

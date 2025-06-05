@@ -46,15 +46,26 @@ func windType(deg float64) string {
 }
 
 func SendDiscordWeatherNotification(msg string, weatherData map[string]interface{}) error {
-    main := weatherData["main"].(map[string]interface{})
-    wind := weatherData["wind"].(map[string]interface{})
-    weatherArr := weatherData["weather"].([]interface{})
-    weather := weatherArr[0].(map[string]interface{})
-    icon := weather["icon"].(string)
-    lat := weatherData["coord"].(map[string]interface{})["lat"]
-    lon := weatherData["coord"].(map[string]interface{})["lon"]
+    main, _ := weatherData["main"].(map[string]interface{})
+    wind, _ := weatherData["wind"].(map[string]interface{})
+    weatherArr, _ := weatherData["weather"].([]interface{})
+    var weather map[string]interface{}
+    if len(weatherArr) > 0 {
+        weather, _ = weatherArr[0].(map[string]interface{})
+    }
+    icon, _ := weather["icon"].(string)
 
-    deg := wind["deg"].(float64)
+    // Try to get coordinates from forecast "city" field if not present
+    var lat, lon interface{}
+    if coord, ok := weatherData["coord"].(map[string]interface{}); ok {
+        lat = coord["lat"]
+        lon = coord["lon"]
+    } else if city, ok := weatherData["city"].(map[string]interface{}); ok {
+        lat = city["coord"].(map[string]interface{})["lat"]
+        lon = city["coord"].(map[string]interface{})["lon"]
+    }
+
+    deg, _ := wind["deg"].(float64)
     windKind := windType(deg)
 
     embed := Embed{
@@ -86,7 +97,7 @@ func SendDiscordWeatherNotification(msg string, weatherData map[string]interface
         Content:   msg,
         Embeds:    []Embed{embed},
         Username:  "Wind Watcher",
-        AvatarURL: fmt.Sprintf("https://openweathermap.org/img/wn/%s@2x.png", icon), // Weather icon as avatar
+        AvatarURL: fmt.Sprintf("https://openweathermap.org/img/wn/%s@2x.png", icon),
     }
     body, _ := json.Marshal(payload)
     _, err := http.Post(config.GetDiscordWebhookURL(), "application/json", bytes.NewBuffer(body))
