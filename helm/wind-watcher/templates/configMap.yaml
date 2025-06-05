@@ -5,9 +5,12 @@ metadata:
   labels:
     {{- include "wind-watcher.labels" . | nindent 4 }}
 data:
-  WIND_THRESHOLD: "{{ .Values.windThreshold | default "11" }}"
-  NOTIFY_HOUR: "{{ .Values.notifyHour | default "9" }}"
+  # Mandatory environment variables
+  LOCATION: "{{ .Values.location | default "" }}"
   OPENWEATHER_API_KEY: "{{ .Values.openweatherApiKey | default "" }}"
   DISCORD_WEBHOOK_URL: "{{ .Values.discordWebhookUrl | default "" }}"
+  # Optional environment variables with defaults
+  WIND_THRESHOLD: "{{ .Values.windThreshold | default "11" }}"
+  NOTIFY_HOUR: "{{ .Values.notifyHour | default "9" }}"
   STATE_FILE: "{{ .Values.stateFile | default "/tmp/last_notification_date" }}"
   WIND_KMH_FACTOR: "{{ .Values.windKMHFactor | default "3.6" }}"

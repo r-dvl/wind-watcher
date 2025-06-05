@@ -6,13 +6,7 @@ import (
 	"strconv"
 )
 
-func GetStateFile() string {
-	return getEnv("STATE_FILE", "/tmp/last_notification_date")
-}
-
-func GetWindThreshold() int {
-	return getEnvAsInt("WIND_THRESHOLD", 11)
-}
+// Mandatory Config Parameters
 
 func GetOpenWeatherAPIKey() string {
 	return mustGetEnv("OPENWEATHER_API_KEY")
@@ -20,6 +14,20 @@ func GetOpenWeatherAPIKey() string {
 
 func GetDiscordWebhookURL() string {
 	return mustGetEnv("DISCORD_WEBHOOK_URL")
+}
+
+func GetLocation() string {
+    return getEnv("LOCATION", "Tarifa,ES")
+}
+
+// Optional Config Parameters
+
+func GetStateFile() string {
+	return getEnv("STATE_FILE", "/tmp/last_notification_date")
+}
+
+func GetWindThreshold() int {
+	return getEnvAsInt("WIND_THRESHOLD", 11)
 }
 
 func GetWindKMHFactor() float64 {

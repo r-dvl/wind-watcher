@@ -8,10 +8,10 @@ import (
     "github.com/r-dvl/wind-watcher/internal/config"
 )
 
-// Returns both the full weather data (as map[string]interface{}) and the wind speed (float64)
 func GetWeatherDataAndWindSpeed() (map[string]interface{}, float64, error) {
     url := fmt.Sprintf(
-        "https://api.openweathermap.org/data/2.5/weather?lat=36.0131&lon=-5.6078&appid=%s&units=metric",
+        "https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric",
+        config.GetLocation(),
         config.GetOpenWeatherAPIKey(),
     )
     resp, err := http.Get(url)

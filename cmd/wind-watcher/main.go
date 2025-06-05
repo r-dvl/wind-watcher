@@ -22,7 +22,8 @@ func main() {
             if err != nil {
                 log.Println("❌ Error getting wind data:", err)
             } else {
-                msg := fmt.Sprintf("🌬️ Wind in Tarifa: %.1f km/h.", windSpeed)
+                location := config.GetLocation()
+                msg := fmt.Sprintf("🌬️ Wind in %s: %.1f km/h.", location, windSpeed)
                 err = notify.SendDiscordWeatherNotification(msg, weatherData)
                 if err != nil {
                     log.Println("❌ Error sending notification:", err)
