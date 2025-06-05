@@ -8,28 +8,35 @@ import (
     "github.com/r-dvl/wind-watcher/internal/config"
 )
 
-type WindData struct {
-	Wind struct {
-		Speed float64 `json:"speed"`
-	} `json:"wind"`
-}
-
-func GetWindSpeed() (float64, error) {
+// Returns both the full weather data (as map[string]interface{}) and the wind speed (float64)
+func GetWeatherDataAndWindSpeed() (map[string]interface{}, float64, error) {
     url := fmt.Sprintf(
-        "https://api.openweathermap.org/data/2.5/weather?lat=36.0131&lon=-5.6078&appid=%s",
+        "https://api.openweathermap.org/data/2.5/weather?lat=36.0131&lon=-5.6078&appid=%s&units=metric",
         config.GetOpenWeatherAPIKey(),
     )
     resp, err := http.Get(url)
     if err != nil {
-        return 0, err
+        return nil, 0, err
     }
     defer resp.Body.Close()
 
-    var data WindData
+    var data map[string]interface{}
     err = json.NewDecoder(resp.Body).Decode(&data)
     if err != nil {
-        return 0, err
+        return nil, 0, err
     }
 
-    return data.Wind.Speed * config.GetWindKMHFactor(), nil
+    wind, ok := data["wind"].(map[string]interface{})
+    if !ok {
+        return data, 0, fmt.Errorf("wind data missing")
+    }
+    speed, ok := wind["speed"].(float64)
+    if !ok {
+        return data, 0, fmt.Errorf("wind speed missing")
+    }
+
+    // Convert to km/h if needed
+    speed = speed * config.GetWindKMHFactor()
+
+    return data, speed, nil
 }

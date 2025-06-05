@@ -22,5 +22,8 @@ func HasNotifiedToday() bool {
 
 func MarkNotifiedToday() {
     today := time.Now().Format("2006-01-02")
-    _ = os.WriteFile(config.GetStateFile(), []byte(today), 0644)
+    err := os.WriteFile(config.GetStateFile(), []byte(today), 0644)
+    if err != nil {
+        println("Error writing state:", err.Error())
+    }
 }

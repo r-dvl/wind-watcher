@@ -42,3 +42,4 @@ dist/
 Thumbs.db
 
 .env
+docker-compose.dev.yml
