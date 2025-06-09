@@ -116,7 +116,7 @@ func SendDiscordWeatherNotification(msg string, bestDay *wind.DayWindInfo, mapUR
         Content:   "",
         Embeds:    []Embed{embed},
         Username:  "Wind Watcher",
-        AvatarURL: "https://openweathermap.org/themes/openweathermap/assets/img/logo_white_cropped.png",
+        AvatarURL: "https://avatars.githubusercontent.com/u/1743227?s=200&v=4",
     }
     body, _ := json.Marshal(payload)
     _, err := http.Post(config.GetDiscordWebhookURL(), "application/json", bytes.NewBuffer(body))
