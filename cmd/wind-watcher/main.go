@@ -19,16 +19,19 @@ func main() {
 
         if now.Hour() >= config.GetNotifyHour() && !state.HasNotifiedToday() {
             threshold := float64(config.GetWindThreshold())
-            dayWind, err := wind.GetForecastWindBelowThreshold(threshold)
+            weekWind, err := wind.GetWeeklyWindPrediction(threshold)
             if err != nil {
                 log.Println("❌ No notification sent:", err)
             } else {
                 location := config.GetLocation()
-                msg := fmt.Sprintf(
-                    "🌬️ Good news! The wind in %s will be %.1f km/h or less on %s. Perfect for your plans!",
-                    location, dayWind.Speed, dayWind.Date,
+                mapURL := fmt.Sprintf("https://openweathermap.org/find?q=%s", location)
+                err = notify.SendWeatherNotification(
+                    location,
+                    threshold,
+                    weekWind.Days,
+                    weekWind.BestDay,
+                    mapURL,
                 )
-                err = notify.SendDiscordWeatherNotification(msg, dayWind.Data)
                 if err != nil {
                     log.Println("❌ Error sending notification:", err)
                 } else {

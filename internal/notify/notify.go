@@ -5,8 +5,125 @@ import (
     "encoding/json"
     "fmt"
     "net/http"
+    "os"
+    "time"
+
     "github.com/r-dvl/wind-watcher/internal/config"
+    "github.com/r-dvl/wind-watcher/internal/wind"
 )
+
+func SendWeatherNotification(
+    location string,
+    threshold float64,
+    days []wind.DayWindInfo,
+    bestDay *wind.DayWindInfo,
+    mapURL string,
+) error {
+    msg := formatWeatherMessage(location, threshold, days, bestDay)
+    webhook := config.GetDiscordWebhookURL()
+    if webhook != "" {
+        return SendDiscordWeatherNotification(msg, bestDay, mapURL, days)
+    }
+    fmt.Fprintln(os.Stdout, msg)
+    return nil
+}
+
+func formatWeatherMessage(location string, threshold float64, days []wind.DayWindInfo, bestDay *wind.DayWindInfo) string {
+    msg := fmt.Sprintf("🌬️ Wind forecast for %s (≤ %.1f km/h):\n", location, threshold)
+    for _, day := range days {
+        t, err := time.Parse("2006-01-02", day.Date)
+        weekday := day.Date
+        if err == nil {
+            weekday = t.Weekday().String()
+        }
+        mainData, _ := day.Data["main"].(map[string]interface{})
+        windData, _ := day.Data["wind"].(map[string]interface{})
+        temp := "?"
+        humidity := "?"
+        windDir := "?"
+        if mainData != nil {
+            if v, ok := mainData["temp"].(float64); ok {
+                temp = fmt.Sprintf("%.1f°C", v)
+            }
+            if v, ok := mainData["humidity"].(float64); ok {
+                humidity = fmt.Sprintf("%d%%", int(v))
+            }
+        }
+        if windData != nil {
+            if v, ok := windData["deg"].(float64); ok {
+                windDir = wind.WindDirLabel(v)
+            }
+        }
+        best := ""
+        if bestDay != nil && day.Date == bestDay.Date {
+            best = " ⭐ Best day!"
+        }
+        msg += fmt.Sprintf(
+            "- %s (%s): wind %.1f km/h, %s, %s, %s%s\n",
+            day.Date, weekday, day.Speed, temp, humidity, windDir, best,
+        )
+    }
+    return msg
+}
+
+func SendDiscordWeatherNotification(msg string, bestDay *wind.DayWindInfo, mapURL string, days []wind.DayWindInfo) error {
+    var fields []EmbedField
+
+    for _, day := range days {
+        t, err := time.Parse("2006-01-02", day.Date)
+        weekday := day.Date
+        if err == nil {
+            weekday = t.Weekday().String()
+        }
+        mainData, _ := day.Data["main"].(map[string]interface{})
+        windData, _ := day.Data["wind"].(map[string]interface{})
+        temp := "?"
+        humidity := "?"
+        windDir := "?"
+        if mainData != nil {
+            if v, ok := mainData["temp"].(float64); ok {
+                temp = fmt.Sprintf("%.1f°C", v)
+            }
+            if v, ok := mainData["humidity"].(float64); ok {
+                humidity = fmt.Sprintf("%d%%", int(v))
+            }
+        }
+        if windData != nil {
+            if v, ok := windData["deg"].(float64); ok {
+                windDir = wind.WindDirLabel(v)
+            }
+        }
+        best := ""
+        if bestDay != nil && day.Date == bestDay.Date {
+            best = "⭐"
+        }
+        fields = append(fields, EmbedField{
+            Name:   fmt.Sprintf("%s (%s) %s", weekday, day.Date, best),
+            Value:  fmt.Sprintf("**Wind:** %.1f km/h\n**Temp:** %s\n**Humidity:** %s\n**Dir:** %s", day.Speed, temp, humidity, windDir),
+            Inline: true,
+        })
+    }
+
+    embed := Embed{
+        Title:       "🌬️ Wind forecast",
+        Description: fmt.Sprintf("Wind forecast for the next days:\nThreshold: ≤ %.1f km/h", bestDay.Speed),
+        Color:       3447003,
+        URL:         mapURL,
+        Fields:      fields,
+    }
+
+    payload := WebhookMessage{
+        Content:   "",
+        Embeds:    []Embed{embed},
+        Username:  "Wind Watcher",
+        AvatarURL: "https://openweathermap.org/themes/openweathermap/assets/img/logo_white_cropped.png",
+    }
+    body, _ := json.Marshal(payload)
+    _, err := http.Post(config.GetDiscordWebhookURL(), "application/json", bytes.NewBuffer(body))
+    return err
+}
+
+// --- Discord embed types ---
 
 type EmbedField struct {
     Name   string `json:"name"`
@@ -19,12 +136,12 @@ type EmbedThumbnail struct {
 }
 
 type Embed struct {
-    Title       string         `json:"title,omitempty"`
-    Description string         `json:"description,omitempty"`
-    Color       int            `json:"color,omitempty"`
-    URL         string         `json:"url,omitempty"`
+    Title       string          `json:"title,omitempty"`
+    Description string          `json:"description,omitempty"`
+    Color       int             `json:"color,omitempty"`
+    URL         string          `json:"url,omitempty"`
     Thumbnail   *EmbedThumbnail `json:"thumbnail,omitempty"`
-    Fields      []EmbedField   `json:"fields,omitempty"`
+    Fields      []EmbedField    `json:"fields,omitempty"`
 }
 
 type WebhookMessage struct {
@@ -32,74 +149,4 @@ type WebhookMessage struct {
     Embeds    []Embed `json:"embeds,omitempty"`
     Username  string  `json:"username,omitempty"`
     AvatarURL string  `json:"avatar_url,omitempty"`
-}
-
-func windType(deg float64) string {
-    switch {
-    case deg >= 45 && deg <= 135:
-        return "Levante (East wind)"
-    case deg >= 225 && deg <= 315:
-        return "Poniente (West wind)"
-    default:
-        return "Other"
-    }
-}
-
-func SendDiscordWeatherNotification(msg string, weatherData map[string]interface{}) error {
-    main, _ := weatherData["main"].(map[string]interface{})
-    wind, _ := weatherData["wind"].(map[string]interface{})
-    weatherArr, _ := weatherData["weather"].([]interface{})
-    var weather map[string]interface{}
-    if len(weatherArr) > 0 {
-        weather, _ = weatherArr[0].(map[string]interface{})
-    }
-    icon, _ := weather["icon"].(string)
-
-    // Try to get coordinates from forecast "city" field if not present
-    var lat, lon interface{}
-    if coord, ok := weatherData["coord"].(map[string]interface{}); ok {
-        lat = coord["lat"]
-        lon = coord["lon"]
-    } else if city, ok := weatherData["city"].(map[string]interface{}); ok {
-        lat = city["coord"].(map[string]interface{})["lat"]
-        lon = city["coord"].(map[string]interface{})["lon"]
-    }
-
-    deg, _ := wind["deg"].(float64)
-    windKind := windType(deg)
-
-    embed := Embed{
-        Title:       "🌬️ Wind Alert!",
-        Description: msg,
-        Color:       3447003,
-        URL:         fmt.Sprintf("https://openweathermap.org/weathermap?basemap=map&cities=true&layer=wind&lat=%v&lon=%v&zoom=10", lat, lon),
-        Thumbnail:   &EmbedThumbnail{URL: fmt.Sprintf("https://openweathermap.org/img/wn/%s@2x.png", icon)},
-        Fields: []EmbedField{
-            {
-                Name:   "Temperature",
-                Value:  fmt.Sprintf("%.1f°C", main["temp"].(float64)),
-                Inline: true,
-            },
-            {
-                Name:   "Humidity",
-                Value:  fmt.Sprintf("%d%%", int(main["humidity"].(float64))),
-                Inline: true,
-            },
-            {
-                Name:   "Wind",
-                Value:  fmt.Sprintf("%.1f m/s, %.0f° (%s)", wind["speed"].(float64), deg, windKind),
-                Inline: true,
-            },
-        },
-    }
-
-    payload := WebhookMessage{
-        Content:   msg,
-        Embeds:    []Embed{embed},
-        Username:  "Wind Watcher",
-        AvatarURL: fmt.Sprintf("https://openweathermap.org/img/wn/%s@2x.png", icon),
-    }
-    body, _ := json.Marshal(payload)
-    _, err := http.Post(config.GetDiscordWebhookURL(), "application/json", bytes.NewBuffer(body))
-    return err
 }

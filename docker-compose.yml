@@ -1,11 +1,11 @@
 services:
   wind-watcher:
     build: .
-    container_name: wind_notifier
+    container_name: wind_watcher
     restart: unless-stopped
     environment:
+      LOCATION: ""
       OPENWEATHER_API_KEY: ""
       DISCORD_WEBHOOK_URL: ""
       WIND_THRESHOLD: "10"
       NOTIFY_HOUR: "18"
-
