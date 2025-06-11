@@ -106,7 +106,7 @@ func SendDiscordWeatherNotification(msg string, bestDay *wind.DayWindInfo, mapUR
 
     embed := Embed{
         Title:       "🌬️ Wind forecast",
-        Description: fmt.Sprintf("Wind forecast for the next days:\nThreshold: ≤ %.1f km/h", config.GetWindThreshold()),
+        Description: fmt.Sprintf("Wind forecast for the next days:\nThreshold: ≤ %d km/h", config.GetWindThreshold()),
         Color:       3447003,
         URL:         mapURL,
         Fields:      fields,
