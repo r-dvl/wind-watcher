@@ -99,7 +99,7 @@ func SendDiscordWeatherNotification(msg string, bestDay *wind.DayWindInfo, mapUR
         }
         fields = append(fields, EmbedField{
             Name:   fmt.Sprintf("%s (%s) %s", weekday, day.Date, best),
-            Value:  fmt.Sprintf("**Wind:** %.1f km/h\n**Temp:** %s\n**Humidity:** %s\n**Dir:** %s\n", day.Speed, temp, humidity, windDir),
+            Value:  fmt.Sprintf("**Wind:** %.1f km/h\n**Temp:** %s\n**Humidity:** %s\n**Dir:** %s\n— — — — — — — — —\n", day.Speed, temp, humidity, windDir),
             Inline: true,
         })
     }
